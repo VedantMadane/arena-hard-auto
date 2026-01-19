@@ -136,6 +136,23 @@ def make_config(config_file: str) -> dict:
 
 @register_api("openai")
 def chat_completion_openai(model, messages, temperature, max_tokens, api_dict=None, **kwargs):
+    """Send a chat completion request to an OpenAI or OpenAI-compatible server.
+
+    Uses a thread-local cached client to avoid per-request connection overhead,
+    which is especially important for local inference servers like vLLM.
+
+    Args:
+        model: The model identifier to use for completion.
+        messages: List of message dicts with 'role' and 'content' keys.
+        temperature: Sampling temperature for generation.
+        max_tokens: Maximum number of tokens to generate.
+        api_dict: Optional dict with 'api_base', 'api_key', 'timeout', and
+            'model_name' (to override the model parameter).
+        **kwargs: Additional arguments (unused).
+
+    Returns:
+        Dict with 'answer' key containing the model response, or API_ERROR_OUTPUT on failure.
+    """
     import openai
 
     client = get_openai_client(api_dict)
@@ -180,12 +197,26 @@ def chat_completion_openai(model, messages, temperature, max_tokens, api_dict=No
 
 @register_api("openai_thinking")
 def chat_completion_openai_thinking(model, messages, api_dict=None, **kwargs):
+    """Send a chat completion request to OpenAI models with reasoning/thinking support.
+
+    Uses the cached OpenAI client and supports models with extended reasoning
+    capabilities (e.g., o1, o3). Handles rate limits with exponential backoff.
+
+    Args:
+        model: The model identifier to use for completion.
+        messages: List of message dicts with 'role' and 'content' keys.
+        api_dict: Optional dict with 'api_base', 'api_key', and 'timeout' settings.
+        **kwargs: Additional arguments, notably 'reasoning_effort' (default: 'medium').
+
+    Returns:
+        Dict with 'answer' key containing the model response, or API_ERROR_OUTPUT on failure.
+    """
     import openai
 
     client = get_openai_client(api_dict)
     
     output = API_ERROR_OUTPUT
-    for i in range(API_MAX_RETRY):
+    for _ in range(API_MAX_RETRY):
         try:
             completion = client.chat.completions.create(
                 model=model,
@@ -197,13 +228,13 @@ def chat_completion_openai_thinking(model, messages, api_dict=None, **kwargs):
             }
             break
         except openai.RateLimitError as e:
-            print(type(e), e)
+            _tqdm_write(f"{type(e).__name__}: {e}")
             time.sleep(API_RETRY_SLEEP)
         except openai.BadRequestError as e:
-            print(messages)
-            print(type(e), e)
-        except KeyError:
-            print(type(e), e)
+            _tqdm_write(f"{type(e).__name__}: {e}")
+            break
+        except KeyError as e:
+            _tqdm_write(f"{type(e).__name__}: {e}")
             break
     
     return output
