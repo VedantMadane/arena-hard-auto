@@ -26,7 +26,15 @@ registered_engine_completion = {}
 
 
 def _tqdm_write(msg: str) -> None:
-    # Avoid corrupting progress bars when multiple worker threads print.
+    """Write a message to stdout without corrupting tqdm progress bars.
+
+    In multi-threaded environments, direct print() calls can interleave with
+    tqdm's progress bar output, causing garbled console output. This helper
+    uses tqdm.write() which properly coordinates with active progress bars.
+
+    Args:
+        msg: The message string to write to stdout.
+    """
     try:
         tqdm.write(msg)
     except Exception:

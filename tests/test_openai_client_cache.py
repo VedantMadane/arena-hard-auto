@@ -1,9 +1,19 @@
+"""Unit tests for OpenAI client caching functionality."""
+
 import unittest
 from unittest import mock
 
 
 class TestOpenAIClientCache(unittest.TestCase):
+    """Test suite for the OpenAI client caching mechanism."""
+
     def test_openai_client_is_cached_per_thread_and_endpoint(self):
+        """Verify that OpenAI clients are cached per thread and endpoint configuration.
+
+        Tests that:
+        - Repeated calls with identical config return the same client instance
+        - Different configurations (e.g., timeout) create separate cached clients
+        """
         # Avoid importing the full completion stack (pulls optional deps).
         # Instead, mock an `openai` module and test the small helper directly.
         from utils import openai_client
