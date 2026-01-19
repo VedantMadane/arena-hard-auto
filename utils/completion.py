@@ -139,7 +139,7 @@ def chat_completion_openai(model, messages, temperature, max_tokens, api_dict=No
     import openai
 
     client = get_openai_client(api_dict)
-        
+
     if api_dict and "model_name" in api_dict:
         model = api_dict["model_name"]
     
@@ -181,13 +181,8 @@ def chat_completion_openai(model, messages, temperature, max_tokens, api_dict=No
 @register_api("openai_thinking")
 def chat_completion_openai_thinking(model, messages, api_dict=None, **kwargs):
     import openai
-    
-    if api_dict:
-        client = openai.OpenAI(
-            api_key=api_dict["api_key"],
-        )
-    else:
-        client = openai.OpenAI()
+
+    client = get_openai_client(api_dict)
     
     output = API_ERROR_OUTPUT
     for i in range(API_MAX_RETRY):

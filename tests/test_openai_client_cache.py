@@ -7,6 +7,12 @@ from unittest import mock
 class TestOpenAIClientCache(unittest.TestCase):
     """Test suite for the OpenAI client caching mechanism."""
 
+    def setUp(self):
+        """Reset thread-local cache before each test to ensure isolation."""
+        from utils import openai_client
+        if hasattr(openai_client._thread_local, "openai_clients"):
+            del openai_client._thread_local.openai_clients
+
     def test_openai_client_is_cached_per_thread_and_endpoint(self):
         """Verify that OpenAI clients are cached per thread and endpoint configuration.
 
