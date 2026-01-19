@@ -216,7 +216,7 @@ def chat_completion_openai_thinking(model, messages, api_dict=None, **kwargs):
     """Send a chat completion request to OpenAI models with reasoning/thinking support.
 
     Uses the cached OpenAI client and supports models with extended reasoning
-    capabilities (e.g., o1, o3). Handles rate limits with exponential backoff.
+    capabilities (e.g., o1, o3). Handles rate limits with fixed backoff (API_RETRY_SLEEP).
 
     Args:
         model: The model identifier to use for completion.
