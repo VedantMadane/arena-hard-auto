@@ -1,3 +1,9 @@
+"""Thread-local OpenAI client caching for improved performance.
+
+This module provides a caching mechanism that reuses OpenAI client instances
+per thread and endpoint configuration, avoiding the overhead of creating new
+HTTP clients for each API request.
+"""
 from __future__ import annotations
 
 import threading
