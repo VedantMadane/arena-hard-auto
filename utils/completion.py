@@ -42,6 +42,14 @@ def _tqdm_write(msg: str) -> None:
 
 
 def register_api(api_type):
+    """Decorator to register a function as an API completion handler.
+
+    Args:
+        api_type: String identifier for the API type (e.g., 'openai', 'anthropic').
+
+    Returns:
+        Decorator function that registers the wrapped function.
+    """
     def decorator(func):
         registered_api_completion[api_type] = func
         return func
@@ -50,6 +58,14 @@ def register_api(api_type):
 
 
 def register_engine(engine_type):
+    """Decorator to register a function as an engine completion handler.
+
+    Args:
+        engine_type: String identifier for the engine type (e.g., 'sglang').
+
+    Returns:
+        Decorator function that registers the wrapped function.
+    """
     def decorator(func):
         registered_engine_completion[engine_type] = func
         return func
