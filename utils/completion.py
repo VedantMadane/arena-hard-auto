@@ -14,6 +14,7 @@ from glob import glob
 from tqdm import tqdm
 
 from utils.bedrock_utils import create_llama3_body, create_nova_messages, extract_answer
+from utils.openai_client import get_openai_client
 
 # API setting constants
 API_MAX_RETRY = 3
@@ -22,6 +23,14 @@ API_ERROR_OUTPUT = None
 
 registered_api_completion = {}
 registered_engine_completion = {}
+
+
+def _tqdm_write(msg: str) -> None:
+    # Avoid corrupting progress bars when multiple worker threads print.
+    try:
+        tqdm.write(msg)
+    except Exception:
+        print(msg)
 
 
 def register_api(api_type):
@@ -120,13 +129,8 @@ def make_config(config_file: str) -> dict:
 @register_api("openai")
 def chat_completion_openai(model, messages, temperature, max_tokens, api_dict=None, **kwargs):
     import openai
-    if api_dict:
-        client = openai.OpenAI(
-            base_url=api_dict["api_base"],
-            api_key=api_dict["api_key"],
-        )
-    else:
-        client = openai.OpenAI()
+
+    client = get_openai_client(api_dict)
         
     if api_dict and "model_name" in api_dict:
         model = api_dict["model_name"]
@@ -145,14 +149,23 @@ def chat_completion_openai(model, messages, temperature, max_tokens, api_dict=No
             }
             break
         except openai.RateLimitError as e:
-            print(type(e), e)
+            _tqdm_write(f"{type(e).__name__}: {e}")
             time.sleep(API_RETRY_SLEEP)
         except openai.BadRequestError as e:
-            print(messages)
-            print(type(e), e)
-        except KeyError:
-            print(type(e), e)
+            # Usually deterministic; don't spam full messages in multi-threaded runs.
+            _tqdm_write(f"{type(e).__name__}: {e}")
             break
+        except (openai.APITimeoutError, openai.APIConnectionError, openai.InternalServerError) as e:
+            # Common transient errors with local OpenAI-compatible servers (e.g., vLLM)
+            _tqdm_write(f"{type(e).__name__}: {e}")
+            time.sleep(API_RETRY_SLEEP)
+        except KeyError as e:
+            _tqdm_write(f"{type(e).__name__}: {e}")
+            break
+        except Exception as e:
+            # Keep the worker alive and allow the main progress loop to continue.
+            _tqdm_write(f"{type(e).__name__}: {e}")
+            time.sleep(API_RETRY_SLEEP)
     
     return output
 
