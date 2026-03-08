@@ -10,8 +10,8 @@ class TestOpenAIClientCache(unittest.TestCase):
     def setUp(self):
         """Reset thread-local cache before each test to ensure isolation."""
         from utils import openai_client
-        if hasattr(openai_client._thread_local, "openai_clients"):
-            del openai_client._thread_local.openai_clients
+        # Ensure no cached client from earlier tests in this thread.
+        openai_client._thread_local.__dict__.pop("openai_clients", None)
 
     def test_openai_client_is_cached_per_thread_and_endpoint(self):
         """Verify that OpenAI clients are cached per thread and endpoint configuration.
